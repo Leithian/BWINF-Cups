@@ -6,8 +6,8 @@ import java.util.ArrayList;
 
 public class Simulation 
 {
-	public Player player1;
-	public Player player2;
+	public Player player1 = new Player();
+	public Player player2 = new Player();
 	
 	public Simulation(File file) throws SimulationException
 	{
@@ -15,11 +15,30 @@ public class Simulation
 			BufferedReader reader = new BufferedReader(new FileReader(file));
 			String l1 = reader.readLine();
 			int amount1 = Integer.parseInt(l1);
+			String l2 = reader.readLine();
+			String l3 = reader.readLine();
+			String[] s1 = l2.split(" ");
+			String[] s2 = l3.split(" ");
+			int total = s1.length;
+			
+			for(int i = 0; i < amount1; i++)
+			{
+				int max = Integer.parseInt(s1[i]);
+				int cur = Integer.parseInt(s2[i]);
+				player1.addCup(new Cup(cur, max));
+			}
+			for(int i = amount1; i < total; i++)
+			{
+				int max = Integer.parseInt(s1[i]);
+				int cur = Integer.parseInt(s2[i]);
+				player2.addCup(new Cup(cur, max));
+			}
+			
 			reader.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (Exception e2) {
-			throw new SimulationException("Filetype not supported");
+			throw new SimulationException("Filetype invalid.");
 		}
 	}
 	

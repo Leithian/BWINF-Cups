@@ -1,8 +1,11 @@
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -36,13 +39,12 @@ public class Main
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(500, 250);
 		frame.setTitle("Gallons");
-		frame.setResizable(false);
+		frame.setLocationRelativeTo(null);
 		
 		bar = new JMenuBar();
 		edit = new JMenu("Edit");
 		load = new JMenuItem("Load");
 		panel = new JPanel();
-		panel.setLayout(new FlowLayout(FlowLayout.LEFT));
 		
 		load.addActionListener(new ActionListener() 
 		{		
@@ -72,11 +74,26 @@ public class Main
 				{
 					try {
 						panel.removeAll();
+						panel.setLayout(new GridBagLayout());
 						simulation = new Simulation(fchooser.getSelectedFile());
-						for(Simulation.Cup cup : simulation.getCups())
-							panel.add(new PanelCup(simulation, cup));
+						GridBagConstraints constr = new GridBagConstraints();
+						ArrayList<Simulation.Cup> list = simulation.getCups();
+						
+						constr.weightx = 1;
+						constr.weighty = 1;
+						constr.insets = new Insets(5, 5, 5, 5);
+						constr.fill = GridBagConstraints.BOTH;
+						constr.gridheight = list.size();
+						
+						for(int i = 0; i < list.size(); i++)
+						{
+							Simulation.Cup cup = list.get(i);
+							constr.gridy = i;
+							panel.add(new PanelCup(simulation, cup), constr);
+						}
 						panel.updateUI();
 					} catch (Exception e2) {
+						e2.printStackTrace();
 						JOptionPane.showMessageDialog(frame, e2.getMessage());
 					}
 				}

@@ -1,5 +1,4 @@
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -21,7 +20,6 @@ public class PanelCup extends JPanel
 		this.cup = cup;
 		this.setBackground(player.getId() == 0 ? Color.red : Color.blue);
 		this.updateUI();
-		this.setPreferredSize(new Dimension(476 / simulation.getCups().size(), 191));
 		
 		this.addMouseListener(new MouseListener() 
 		{		

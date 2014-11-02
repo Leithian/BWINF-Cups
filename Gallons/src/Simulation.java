@@ -6,8 +6,8 @@ import java.util.ArrayList;
 
 public class Simulation 
 {
-	public Player player1 = new Player();
-	public Player player2 = new Player();
+	public Player player1 = new Player(0);
+	public Player player2 = new Player(1);
 	
 	public Simulation(File file) throws SimulationException
 	{
@@ -25,13 +25,13 @@ public class Simulation
 			{
 				int max = Integer.parseInt(s1[i]);
 				int cur = Integer.parseInt(s2[i]);
-				player1.addCup(new Cup(cur, max));
+				player1.addCup(new Cup(cur, max, player1));
 			}
 			for(int i = amount1; i < total; i++)
 			{
 				int max = Integer.parseInt(s1[i]);
 				int cur = Integer.parseInt(s2[i]);
-				player2.addCup(new Cup(cur, max));
+				player2.addCup(new Cup(cur, max, player2));
 			}
 			
 			reader.close();
@@ -47,14 +47,24 @@ public class Simulation
 		return player1.getCurrentAmount() == player2.getCurrentAmount();
 	}
 	
+	public ArrayList<Cup> getCups()
+	{
+		ArrayList<Cup> list = new ArrayList<Cup>();
+		list.addAll(player1.cups);
+		list.addAll(player2.cups);
+		return list;
+	}
+	
 	public static class Cup 
 	{
 		private int max, cur;
+		private Player player;
 		
-		public Cup(int cur, int max)
+		public Cup(int cur, int max, Player player)
 		{
 			this.cur = cur;
 			this.max = max;
+			this.player = player;
 		}
 		
 		public int getAmount()
@@ -67,18 +77,35 @@ public class Simulation
 			return max;
 		}
 		
+		public Player getPlayer()
+		{
+			return player;
+		}
+		
 		public void fill(Cup cup)
 		{
+			if(cup == this) return;
 			int ncur = this.cur + cup.cur;
 			int over = ncur - this.max;
 			this.cur = ncur > this.max ? this.max : ncur;
-			cup.cur = over;
+			cup.cur = over > 0 ? over : 0;
 		}
 	}
 	
-	public class Player 
+	public static class Player 
 	{
+		private int id;
 		private ArrayList<Cup> cups = new ArrayList<Cup>();
+		
+		public Player(int id)
+		{
+			this.id = id;
+		}
+		
+		public int getId()
+		{
+			return id;
+		}
 		
 		public void addCup(Cup cup)
 		{

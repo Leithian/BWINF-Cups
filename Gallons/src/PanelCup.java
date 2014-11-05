@@ -35,7 +35,7 @@ public class PanelCup extends JPanel
 				if(current == null) current = cup;
 				else
 				{
-					panel.cup.fill(current);
+					if(panel.cup.fill(current)) Main.reload.setEnabled(true);
 					current = null;	
 				}
 				((JPanel)e.getComponent().getParent()).updateUI();

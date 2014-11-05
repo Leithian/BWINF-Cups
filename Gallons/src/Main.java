@@ -2,11 +2,13 @@ import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.ArrayList;
 
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -14,6 +16,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JToolBar;
 import javax.swing.UIManager;
 import javax.swing.filechooser.FileFilter;
 
@@ -21,9 +24,8 @@ public class Main
 {
 	public static JFrame frame;
 	public static JPanel panel;
-	public static JMenuBar bar;
-	public static JMenu edit;
-	public static JMenuItem load;
+	public static JToolBar bar;
+	public static JButton open, reload, run;
 	
 	public static Simulation simulation;
 	
@@ -41,12 +43,15 @@ public class Main
 		frame.setTitle("Gallons");
 		frame.setLocationRelativeTo(null);
 		
-		bar = new JMenuBar();
-		edit = new JMenu("Edit");
-		load = new JMenuItem("Load");
+		bar = new JToolBar();
+		bar.setFloatable(false);
+		open = new JButton("Open");
+		reload = new JButton("Reload");
+		reload.setEnabled(false);
+		run = new JButton("Run");
 		panel = new JPanel();
 		
-		load.addActionListener(new ActionListener() 
+		open.addActionListener(new ActionListener() 
 		{		
 			@Override
 			public void actionPerformed(ActionEvent e) 
@@ -57,13 +62,13 @@ public class Main
 					@Override
 					public String getDescription() 
 					{
-						return "Textfile";
+						return "please only Textfiles";
 					}
 					
 					@Override
 					public boolean accept(File f) 
 					{
-						return f.getName().endsWith(".txt");
+						return f.getName().endsWith("");
 					}
 				});
 				fchooser.setDialogTitle("Load...");
@@ -94,14 +99,29 @@ public class Main
 						panel.updateUI();
 					} catch (Exception e2) {
 						e2.printStackTrace();
-						JOptionPane.showMessageDialog(frame, e2.getMessage());
+						Toolkit.getDefaultToolkit().beep();
+						JOptionPane.showMessageDialog(frame, e2.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 					}
 				}
 			}
 		});
 		
-		edit.add(load);
-		bar.add(edit);
+		reload.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e) 
+			{
+				if(simulation != null)
+				{
+					for(Simulation.Cup cup : simulation.getCups()) cup.reset();
+					panel.repaint();
+					reload.setEnabled(false);
+				}
+			}
+		});
+		
+		bar.add(open);
+		bar.add(reload);
 		frame.add(bar, BorderLayout.NORTH);
 		frame.add(panel, BorderLayout.CENTER);
 		

@@ -8,6 +8,7 @@ public class Simulation
 {
 	public Player player1 = new Player(0);
 	public Player player2 = new Player(1);
+	private int totalAmount;
 	
 	public Simulation(File file) throws SimulationException
 	{
@@ -19,27 +20,53 @@ public class Simulation
 			String l3 = reader.readLine();
 			String[] s1 = l2.split(" ");
 			String[] s2 = l3.split(" ");
-			int total = s1.length;
-			
-			for(int i = 0; i < amount1; i++)
-			{
-				int max = Integer.parseInt(s1[i]);
-				int cur = Integer.parseInt(s2[i]);
-				player1.addCup(new Cup(cur, max, player1));
-			}
-			for(int i = amount1; i < total; i++)
-			{
-				int max = Integer.parseInt(s1[i]);
-				int cur = Integer.parseInt(s2[i]);
-				player2.addCup(new Cup(cur, max, player2));
-			}
-			
 			reader.close();
+			
+			if(totalAmount % 2 != 0) throw new SimulationException("Total amount of cups has to be even!");
+			
+			int total = s1.length;		
+			if(s1.length != total || s2.length != total)
+				throw new SimulationException("Declared number of cups didn't match input!");
+			if(total - amount1 < 1)
+				throw new SimulationException("Number of cups for player1 exceeded the boundery!");
+			
+			for(int i = 0; i < total; i++)
+			{
+				int max = Integer.parseInt(s1[i]);
+				int cur = Integer.parseInt(s2[i]);
+				totalAmount += cur;
+				if(i < amount1) player1.addCup(new Cup(cur, max, player1));
+				else player2.addCup(new Cup(cur, max, player2));
+			}
+			
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (Exception e2) {
+		} catch (SimulationException e2) {
+			throw e2;
+		} catch (Exception e3) {
 			throw new SimulationException("Filetype invalid.");
 		}
+	}
+	
+	public void start()
+	{
+		Thread thread = new Thread()
+		{
+			@Override
+			public void run()
+			{		
+				try {					
+					while(isDone())
+					{
+						
+						Thread.sleep(2000);
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		thread.start();
 	}
 	
 	public boolean isDone()
@@ -57,11 +84,13 @@ public class Simulation
 	
 	public static class Cup 
 	{
-		private int max, cur;
+		private int max, cur, def;
 		private Player player;
 		
 		public Cup(int cur, int max, Player player)
 		{
+			if(cur > max) throw new SimulationException("You can not obey the law of physics!");
+			this.def = cur;
 			this.cur = cur;
 			this.max = max;
 			this.player = player;
@@ -82,13 +111,20 @@ public class Simulation
 			return player;
 		}
 		
-		public void fill(Cup cup)
+		public boolean fill(Cup cup)
 		{
-			if(cup == this) return;
+			if(cup == this) return false;
+			int tcur = this.cur;
 			int ncur = this.cur + cup.cur;
 			int over = ncur - this.max;
 			this.cur = ncur > this.max ? this.max : ncur;
 			cup.cur = over > 0 ? over : 0;
+			return tcur != this.cur;
+		}
+		
+		public void reset()
+		{
+			this.cur = def;
 		}
 	}
 	

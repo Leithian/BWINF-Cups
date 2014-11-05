@@ -22,12 +22,12 @@ public class Simulation
 			String[] s2 = l3.split(" ");
 			reader.close();
 			
-			if(totalAmount % 2 != 0) throw new SimulationException("Total amount of cups has to be even!");
+			if(totalAmount % 2 != 0) throw new SimulationException("Total amount of cups has to be even!");			//Error checking and message if amount of fluid cannot be splitted
 			
 			int total = s1.length;		
-			if(s1.length != total || s2.length != total)
+			if(s1.length != total || s2.length != total)			//Error checking and message if number of Cups and number of declared amounts of fluid for Cups didn't match
 				throw new SimulationException("Declared number of cups didn't match input!");
-			if(total - amount1 < 1)
+			if(total - amount1 < 1)									//Error checking and message if player2 has less than 1 cup (or player 1 has more cups than total declared)
 				throw new SimulationException("Number of cups for player1 exceeded the boundery!");
 			
 			for(int i = 0; i < total; i++)
@@ -44,7 +44,7 @@ public class Simulation
 		} catch (SimulationException e2) {
 			throw e2;
 		} catch (Exception e3) {
-			throw new SimulationException("Filetype invalid.");
+			throw new SimulationException("Filetype invalid.");		//Error message if filetype is different than expected
 		}
 	}
 	
@@ -89,7 +89,7 @@ public class Simulation
 		
 		public Cup(int cur, int max, Player player)
 		{
-			if(cur > max) throw new SimulationException("You can not obey the law of physics!");
+			if(cur > max) throw new SimulationException("You can not obey the law of physics!");			//Error checking and message if a cup holds more fluid than it can handle
 			this.def = cur;
 			this.cur = cur;
 			this.max = max;

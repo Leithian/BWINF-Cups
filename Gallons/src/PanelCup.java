@@ -8,12 +8,12 @@ import javax.swing.JPanel;
 public class PanelCup extends JPanel
 {
 	Simulation simulation;
-	Simulation.Cup cup;
-	Simulation.Player player;
+	Cup cup;
+	Player player;
 	
-	public static Simulation.Cup current;
+	public static Cup current;
 	
-	public PanelCup(final Simulation simulation, final Simulation.Cup cup)
+	public PanelCup(final Simulation simulation, final Cup cup)
 	{
 		this.simulation = simulation;
 		this.player = cup.getPlayer();
@@ -38,7 +38,7 @@ public class PanelCup extends JPanel
 					if(panel.cup.fill(current)) Main.reload.setEnabled(true);
 					current = null;	
 				}
-				((JPanel)e.getComponent().getParent()).updateUI();
+				e.getComponent().getParent().repaint();
 			}
 		});
 	}
@@ -47,11 +47,18 @@ public class PanelCup extends JPanel
 	protected void paintComponent(Graphics g) 
 	{
 		if(current == this.cup) setBackground(Color.green);
-		else if(simulation.isDone()) setBackground(Color.yellow);
+		else if(simulation.state.isDone()) setBackground(Color.yellow);
 		else setBackground(player.getId() == 0 ? Color.red : Color.blue);
 		
 		super.paintComponent(g);
-		g.drawString("Maximum: " + cup.getMaxAmount(), 5, 25);
-		g.drawString("Current: " + cup.getAmount(), 5, 40);	
+		g.drawString("Max: " + cup.getMaxAmount(), 5, 15);
+		g.drawString("Cur: " + cup.getAmount(), 5, 30);
+		
+		int height = getHeight() - 10;
+		if(height < 0) return;
+		int cupHeight = (int)(cup.getMaxAmount() / (float)simulation.biggest * height);
+		int fillHeight = (int)(cup.getAmount() / (float)simulation.biggest * height);
+		g.drawRect(getWidth() - 25, getHeight() - cupHeight - 5, 20, cupHeight);
+		g.fillRect(getWidth() - 25, getHeight() - fillHeight - 5, 20, fillHeight);
 	}
 }

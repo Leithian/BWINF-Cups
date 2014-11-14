@@ -6,9 +6,11 @@ import java.util.ArrayList;
 
 public class Simulation 
 {
-	public Player player1 = new Player(0);
-	public Player player2 = new Player(1);
+	public SimulationState state;
 	private int totalAmount;
+	public int biggest;
+	private SolverTree tree;
+	private Thread thread;
 	
 	public Simulation(File file) throws SimulationException
 	{
@@ -22,145 +24,257 @@ public class Simulation
 			String[] s2 = l3.split(" ");
 			reader.close();
 			
-			if(totalAmount % 2 != 0) throw new SimulationException("Total amount of cups has to be even!");			//Error checking and message if amount of fluid cannot be splitted
+			if(totalAmount % 2 != 0) throw new SimulationException("Total amount of cups has to be even!");	//Error checking and message if amount of fluid cannot be splitted
 			
 			int total = s1.length;		
-			if(s1.length != total || s2.length != total)			//Error checking and message if number of Cups and number of declared amounts of fluid for Cups didn't match
+			if(s1.length != total || s2.length != total) //Error checking and message if number of Cups and number of declared amounts of fluid for Cups didn't match
 				throw new SimulationException("Declared number of cups didn't match input!");
-			if(total - amount1 < 1)									//Error checking and message if player2 has less than 1 cup (or player 1 has more cups than total declared)
+			if(total - amount1 < 1)	//Error checking and message if player2 has less than 1 cup (or player 1 has more cups than total declared)
 				throw new SimulationException("Number of cups for player1 exceeded the boundery!");
+			
+			Player player1 = new Player(0);
+			Player player2 = new Player(1);
 			
 			for(int i = 0; i < total; i++)
 			{
 				int max = Integer.parseInt(s1[i]);
 				int cur = Integer.parseInt(s2[i]);
+				if(max > biggest) biggest = max;
 				totalAmount += cur;
 				if(i < amount1) player1.addCup(new Cup(cur, max, player1));
 				else player2.addCup(new Cup(cur, max, player2));
 			}
-			
+			this.state = new SimulationState(player1, player2);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (SimulationException e2) {
 			throw e2;
 		} catch (Exception e3) {
-			throw new SimulationException("Filetype invalid.");		//Error message if filetype is different than expected
+			throw new SimulationException("Filetype invalid.");	//Error message if filetype is different than expected
 		}
+	}
+	
+	public void evaluate()
+	{
+		tree = new SolverTree(state);
+		tree.evaluate();
+		if(tree.isPossible()) 
+		{
+			Main.output("Found a solution in " + tree.getPath().size() + " steps! " + state);
+			start();
+		}
+		else Main.output("No solution found!");
 	}
 	
 	public void start()
 	{
-		Thread thread = new Thread()
+		if(thread != null && thread.isAlive()) return;
+		thread = new Thread()
 		{
 			@Override
-			public void run()
-			{		
-				try {					
-					while(isDone())
+			public void run() 
+			{
+				if(tree.getPath().size() > 0) Main.reload.setEnabled(true);
+				try {
+					for(int i = 0; i < tree.getPath().size(); i++)
 					{
-						
-						Thread.sleep(2000);
+						FillOperation fop = tree.getPath().get(i);
+						fop.apply(state);
+						Main.panel.repaint();
+						Main.output((i + 1) + ": From " + fop.from + " into " + fop.to + " " + state);
+						Thread.sleep(1000);
 					}
-				} catch (InterruptedException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		};
+		thread.setDaemon(true);
 		thread.start();
 	}
-	
-	public boolean isDone()
+
+	public static class SolverTree
 	{
-		return player1.getCurrentAmount() == player2.getCurrentAmount();
-	}
-	
-	public ArrayList<Cup> getCups()
-	{
-		ArrayList<Cup> list = new ArrayList<Cup>();
-		list.addAll(player1.cups);
-		list.addAll(player2.cups);
-		return list;
-	}
-	
-	public static class Cup 
-	{
-		private int max, cur, def;
-		private Player player;
+		private ArrayList<SimulationState> states = new ArrayList<SimulationState>();
+		private SolverNode solution;
+		private ArrayList<FillOperation> path;
+		public SolverNode parent;
 		
-		public Cup(int cur, int max, Player player)
+		public SolverTree(SimulationState state)
 		{
-			if(cur > max) throw new SimulationException("You can not obey the law of physics!");			//Error checking and message if a cup holds more fluid than it can handle
-			this.def = cur;
-			this.cur = cur;
-			this.max = max;
-			this.player = player;
+			this.parent = new SolverNode(this, null, state);
+			parent.isValid = true;
+			states.add(state);
 		}
 		
-		public int getAmount()
+		public ArrayList<FillOperation> getPath()
 		{
-			return cur;
+			return path;
+		}
+
+		@Override
+		public String toString() 
+		{
+			return parent.toString();
 		}
 		
-		public int getMaxAmount()
+		public void evaluate()
 		{
-			return max;
+			if(parent.state.isDone()) 
+			{
+				path = new ArrayList<FillOperation>();
+				solution = parent;
+				return;
+			}
+			parent.evaluate();
+			if(isPossible())
+			{
+				path = new ArrayList<FillOperation>();
+				SolverNode node = solution;
+				while(node.parent != null)
+				{
+					path.add(0, node.operation);
+					node = node.parent;
+				}
+			}	
 		}
 		
-		public Player getPlayer()
+		public boolean isPossible()
 		{
-			return player;
-		}
-		
-		public boolean fill(Cup cup)
-		{
-			if(cup == this) return false;
-			int tcur = this.cur;
-			int ncur = this.cur + cup.cur;
-			int over = ncur - this.max;
-			this.cur = ncur > this.max ? this.max : ncur;
-			cup.cur = over > 0 ? over : 0;
-			return tcur != this.cur;
-		}
-		
-		public void reset()
-		{
-			this.cur = def;
+			return solution != null;
 		}
 	}
 	
-	public static class Player 
+	public static class SolverNode
 	{
-		private int id;
-		private ArrayList<Cup> cups = new ArrayList<Cup>();
+		private SimulationState state;
+		private ArrayList<SolverNode> sub = new ArrayList<SolverNode>();
+		private SolverTree tree;
+		private boolean isValid;
+		private FillOperation operation;
+		private SolverNode parent;
 		
-		public Player(int id)
+		public SolverNode(SolverTree tree, SolverNode parent, SimulationState state)
 		{
-			this.id = id;
+			this.tree = tree;
+			this.state = state;
+			this.parent = parent;
 		}
 		
-		public int getId()
+		public void evaluate()
 		{
-			return id;
-		}
-		
-		public void addCup(Cup cup)
-		{
-			cups.add(cup);
-		}
-		
-		public int getCurrentAmount()
-		{
-			int a = 0;
-			for(Cup cup : cups) a += cup.getAmount();
-			return a;
+			if(!isValid) return;
+			tree.states.add(this.state);
+			
+			for(int i = 0; i < state.getCups().size(); i++)
+			{
+				for(int j = 0; j < state.getCups().size(); j++)
+				{
+					if(i == j) continue;
+					SimulationState state = this.state.clone();
+					Cup cup1 = state.getCups().get(i);
+					Cup cup2 = state.getCups().get(j);
+					if(cup1.getAmount() == 0 && cup2.getAmount() == 0) continue;
+					
+					if(cup1.fill(cup2))
+					{	
+						SolverNode node = new SolverNode(tree, this, state);
+						node.operation = new FillOperation(j, i);
+						sub.add(node);
+						if(state.isDone() && !tree.isPossible())
+							tree.solution = node;
+						if(!tree.states.contains(node.state)) 
+						{
+							node.isValid = true;
+							tree.states.add(state);
+						}
+					}
+				}
+			}
+			
+			for(SolverNode node : sub)
+			{
+				node.evaluate();
+				if(tree.isPossible()) return;
+			}
 		}
 	}
 	
-	public static class SimulationException extends RuntimeException
+	public static class SimulationState implements Cloneable
 	{
-		public SimulationException(String exc)
+		public Player player1, player2;
+		
+		public SimulationState(Player player1, Player player2)
 		{
-			super(exc);
+			this.player1 = player1.clone();
+			this.player2 = player2.clone();
+		}
+		
+		public ArrayList<Cup> getCups()
+		{
+			ArrayList<Cup> list = new ArrayList<Cup>();
+			list.addAll(player1.cups);
+			list.addAll(player2.cups);
+			return list;
+		}
+		
+		public boolean isDone()
+		{
+			return player1.getCurrentAmount() == player2.getCurrentAmount();
+		}
+		
+		@Override
+		protected SimulationState clone()
+		{
+			return new SimulationState(player1.clone(), player2.clone());
+		}
+
+		@Override
+		public boolean equals(Object obj) 
+		{
+			if(obj instanceof SimulationState)
+			{
+				SimulationState state = (SimulationState)obj;
+				for(int i = 0; i < getCups().size(); i++)
+					if(getCups().get(i).getAmount() != state.getCups().get(i).getAmount()) 
+						return false;
+				return true;
+			}
+			return false;
+		}
+		
+		@Override
+		public String toString() 
+		{
+			String s = "(";
+			for(Cup c : player1.cups) 
+				s += c.getAmount() + " ";
+			s += "|";
+			for(Cup c : player2.cups) 
+				s += " " + c.getAmount();
+			s += ")";
+			return s;
+		}
+	}
+	
+	public static class FillOperation
+	{
+		public int from, to;
+		public FillOperation(int from, int to)
+		{
+			this.from = from;
+			this.to = to;
+		}
+		
+		@Override
+		public String toString() 
+		{
+			return "(" + from + " -> " + to + ")";
+		}
+		
+		public void apply(SimulationState state)
+		{
+			state.getCups().get(to).fill(state.getCups().get(from));
 		}
 	}
 }

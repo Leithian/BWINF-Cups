@@ -6,7 +6,7 @@ public class Cup implements Cloneable
 	
 	/**
 	 * Constructor, eine neue Becherinstanz fuer eine {@link Simulation}
-	 * @param cur - Momentane Füllmenge
+	 * @param cur - Momentane Fuellmenge
 	 * @param max - Bechergroesse
 	 * @param player - Der Spieler dem dieser Becher zugewiesen ist
 	 */

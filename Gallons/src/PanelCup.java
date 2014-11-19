@@ -44,7 +44,7 @@ public class PanelCup extends JPanel
 					//Andernfalls versuche den ausgeweahlten Becher in diesen hier zu fuellen,
 					//bei Erfolg wirde der "reload" button aktiviert da eine Aenderung erfolgt ist.
 					if(panel.cup.fill(current)) Main.reload.setEnabled(true);
-					//Setze den ausgeweahlten Becher wieder zurück auf "null".
+					//Setze den ausgeweahlten Becher wieder zurueck auf "null".
 					current = null;	
 				}
 				//Zeichne saemtliche PanelCups neu.

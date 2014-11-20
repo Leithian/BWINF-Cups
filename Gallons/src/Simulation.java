@@ -139,6 +139,8 @@ public class Simulation
 	{
 		/** Liste saemtlicher Fuellkombinationen die bereits erreicht wurden **/
 		private ArrayList<SimulationState> states = new ArrayList<SimulationState>();
+		/** Queue an Nodes zur weiteren Bearbeitung **/
+		private ArrayList<SolverNode> layer = new ArrayList<SolverNode>();
 		/** Der Endzustand **/
 		private SolverNode solution;
 		/** Loesungsweg **/
@@ -179,7 +181,9 @@ public class Simulation
 				return;
 			}
 			//Ansonsten wird an die Startnode weitergegeben.
-			parent.evaluate();
+			parent.populate();
+			goDeeper();
+			
 			//Falls eine Loesung gefunden wurde...
 			if(isPossible())
 			{
@@ -197,6 +201,18 @@ public class Simulation
 			}	
 		}
 		
+		/** Arbeite den Layer ab, fuer jede Node wird {@link SolverNode#populate()} ausgefuehrt **/
+		public void goDeeper()
+		{
+			@SuppressWarnings("unchecked")
+			ArrayList<SolverNode> tmp = (ArrayList<SolverNode>)layer.clone();
+			layer.clear();
+			for(SolverNode node : tmp)
+				node.populate();
+			//Wenn der Layer nicht leer ist, muss er auch bearbeitet werden
+			if(layer.size() > 0) goDeeper();
+		}
+		
 		/**
 		 * Gibt zurueck ob eine Loesung gefunden wurde.
 		 * @return isPossible
@@ -212,8 +228,7 @@ public class Simulation
 	{
 		/** Der momentane Simulationsstatus **/
 		private SimulationState state;
-		/** Sub Nodes **/
-		private ArrayList<SolverNode> sub = new ArrayList<SolverNode>();
+
 		/** Der dazugehoerige {@link SolverTree} **/
 		private SolverTree tree;
 		/** Ob der momentane Zustand schonmal vorkam **/
@@ -222,7 +237,7 @@ public class Simulation
 		private FillOperation operation;
 		/** Parent node **/
 		private SolverNode parent;
-		
+
 		/** Kreiert eine neue SolverNode mit einem SolverTree, einer anderen SolverNode als parent und dem momentanen Simulationsstatus **/
 		public SolverNode(SolverTree tree, SolverNode parent, SimulationState state)
 		{
@@ -231,13 +246,14 @@ public class Simulation
 			this.parent = parent;
 		}
 		
-		/** Gehe saemtiliche Kombinationen durch (brute force!) **/
-		public void evaluate()
+		/** Fuehrt saemtliche Kombinationen durch und fuegt sie dem SolverTree Layer hinzu falls die Node gueltig ist **/
+		public void populate()
 		{
 			//Falls dieser Zustand schonmal vorkam muss nichts unternommen werden
 			if(!isValid) return;
 			//Ansonsten kommt er nun auf jeden Fall vor.
 			tree.states.add(this.state);
+			if(tree.solution != null) return;
 			
 			//Fuelle jeden Becher in jeden Becher
 			for(int i = 0; i < state.getCups().size(); i++)
@@ -259,10 +275,11 @@ public class Simulation
 					{	
 						//Es ist ein neuer Zustand entstanden, also her mit einer neuen Node.
 						SolverNode node = new SolverNode(tree, this, state);
-						//Fuelloperation, welcher Becher in welchen gefuellt wurder.
+						//Fuelloperation, welcher Becher in welchen gefuellt wurde.
 						node.operation = new FillOperation(j, i);
-						//Fuege die Node den children hinzu.
-						sub.add(node);
+						//Fuege die Node dem momentanen Layer hinzu.
+						tree.layer.add(node);
+						
 						//Falls dieser Zustand die Loesung ist, setze die Loesung im SimulationTree
 						if(state.isDone() && !tree.isPossible())
 							tree.solution = node;
@@ -277,14 +294,6 @@ public class Simulation
 						}
 					}
 				}
-			}
-			
-			//Nachdem alle Kombinationen gefunden wurden geht es nun eine Ebene tiefer.
-			for(SolverNode node : sub)
-			{
-				node.evaluate();
-				//Wenn eine Loesung gefunden wurde, muss nicht weitergemacht werden.
-				if(tree.isPossible()) return;
 			}
 		}
 	}
